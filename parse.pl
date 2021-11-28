@@ -1,7 +1,6 @@
 use warnings FATAL => 'all';
 use strict;
 use utf8;
-use Data::Dumper;
 use Data::Dumper::Simple;
 use Perl6::Say
 
@@ -20,13 +19,29 @@ my @arr;
 my @temp;
 my $str_log = "";
 #my %tj;
-my @arrtj;
+my @properties;
+my @main;
 
+my @column = qw(time event level);
+
+#PARSE FILE
 while (my $str = <$fh>) {
     chomp $str;
 
-    if ($str =~ /([0-9]{2}):([0-9]{2})\.([0-9]+)\-([0-9]+)\,(\w+)\,(\d+)/)
+    #($str =~ /([0-9]{2}):([0-9]{2})\.([0-9]+)\-([0-9]+)\,(\w+)\,(\d+)/)
+    if ($str =~ /([0-9]{2}:[0-9]{2}\.[0-9]+\-[0-9]+)\,(\w+)\,(\d+)/)
     {
+        say $&;
+        my %main = (
+            "time"=>$1,
+            "event"=>$2,
+            "level"=>$3,
+        );
+        push(@main, \%main);
+
+        # warn Dumper(@main);
+        # say scalar @main;
+
         if (length($str_log)) {
             push(@arr, $str_log);
             #say $str_log;
@@ -37,12 +52,11 @@ while (my $str = <$fh>) {
         $str_log = join("-#-", $str_log, $str);
         #say $str_log;
     }
-
-
 }
 
 say scalar @arr;
 
+#GET PROPERTIES
 #foreach my $n (@arr) {
 for (my $i=0; $i<scalar @arr; $i++) {
     #say $i . " - " . $arr[$i];
@@ -50,15 +64,19 @@ for (my $i=0; $i<scalar @arr; $i++) {
 
     my %tj;
     while ($arr[$i] =~ m/,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)/g) {
-        #say $arr[$i];
-        #say $&;
-        #say $1;
-        #say $2;
+        unless (grep(/^$1$/, @column)) {
+            push(@column, $1);
+        }
 
-        $tj{$1} = $2;
+        if ($1 eq "Sql") {
+            $tj{$1} = split(/=#=/, $2);
+        }
+        else {
+            $tj{$1} = $2;
+        }
     }
-    push(@arrtj, \%tj);
+    push(@properties, \%tj);
 }
 
-say scalar @arrtj;
-warn Dumper @arrtj;
+say scalar @column;
+warn Dumper $properties[0];
