@@ -2,7 +2,8 @@ use warnings FATAL => 'all';
 use strict;
 use utf8;
 use Data::Dumper::Simple;
-use Perl6::Say
+use Perl6::Say;
+use DateTime qw( );
 
 binmode(STDIN,':utf8');
 binmode(STDOUT,':utf8');
@@ -18,7 +19,6 @@ open(my $fh, '<:encoding(UTF-8)', $filename)
 my @arr;
 my @temp;
 my $str_log = "";
-#my %tj;
 my @properties;
 my @main;
 
@@ -28,18 +28,31 @@ my @column = qw(time event level);
 while (my $str = <$fh>) {
     chomp $str;
 
-    #($str =~ /([0-9]{2}):([0-9]{2})\.([0-9]+)\-([0-9]+)\,(\w+)\,(\d+)/)
     if ($str =~ /([0-9]{2}:[0-9]{2}\.[0-9]+\-[0-9]+)\,(\w+)\,(\d+)/)
     {
-        say $&;
+        my ($y,$m,$d,$h) = $filename =~ /^([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})/ or die;
+        my ($mm,$ss) = $str =~ /([0-9]{2}):([0-9]{2})\./ or die;
+        my ($id,$event,$level) = $str =~ /([0-9]{2}:[0-9]{2}\.[0-9]+\-[0-9]+)\,(\w+)\,(\d+)/ or die;
+        my $datetime = DateTime->new(
+        year      => "20".$y,
+        month     => $m,
+        day       => $d,
+        hour       => $h,
+        minute     => $mm,
+        second     => $ss,        
+        time_zone => 'local',
+        );
+        #say $datetime;
+
         my %main = (
-            "time"=>$1,
-            "event"=>$2,
-            "level"=>$3,
+            "time"=>$datetime->datetime(),
+            "id"=>$id,
+            "event"=>$event,
+            "level"=>$level,
         );
         push(@main, \%main);
 
-        # warn Dumper(@main);
+        warn Dumper(@main);
         # say scalar @main;
 
         if (length($str_log)) {
@@ -57,11 +70,7 @@ while (my $str = <$fh>) {
 say scalar @arr;
 
 #GET PROPERTIES
-#foreach my $n (@arr) {
 for (my $i=0; $i<scalar @arr; $i++) {
-    #say $i . " - " . $arr[$i];
-    #say;
-
     my %tj;
     while ($arr[$i] =~ m/,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)/g) {
         unless (grep(/^$1$/, @column)) {
@@ -79,4 +88,4 @@ for (my $i=0; $i<scalar @arr; $i++) {
 }
 
 say scalar @column;
-warn Dumper $properties[0];
+#warn Dumper $properties[0];
