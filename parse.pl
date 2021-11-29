@@ -11,10 +11,10 @@ binmode(STDOUT,':utf8');
 
 #SQL CONNECT
 my $dsn = 'DBI:ODBC:Driver={SQL Server}';
-my $db_server = "HD-DEV";
+my $db_server = "localhost";
 my $db_name = "tempdb";
 my $db_user = "sa";
-my $db_pass = "SA_1234567890~";
+my $db_pass = "cnhtkjr";
 my $db_table = "tj";
 ##
 
@@ -126,34 +126,35 @@ if (0) {
 
 #INSERT DATA INTO TABLE
 #my $sql_insert = "INSERT INTO $db_table (" . join(", ", @quote_columns) . " VALUES (" . join(", ", @properties[@_]) . ");";
-my $sql_insert = "INSERT INTO $db_table (";
 my $col = "";
 my $val = "";
 
 # my $tt = $properties[1];
-# warn Dumper $properties[0];
-print $properties[0];
+ #warn Dumper $properties[0];
+#print $properties[0];
 # say $tt->{"p:processName"};
-# warn Dumper $properties[1]->{SessionID};
-# warn Dumper $properties[1]->{"SessionID"};
-for (my $i=0; $i<scalar @columns; $i++) {
-    my $column = $columns[$i];
-    say $column;
-    $col = $col . "$quote_columns[$i], ";
-
-    my $prop = $properties[$i];
-    if (exists $prop->{$column}) {
-        say $prop->{$column};
-        $val = $val . ", $prop->{$column}";
+foreach my $prop (@properties) {
+    $col = "";
+    $val = "";
+    my $len = scalar @columns;
+    for (my $i = 0; $i < $len; $i++) {
+        my $column = $columns[$i];
+        $col = $col . "$quote_columns[$i], ";
+        if (exists $prop->{$column}) {
+            $val = $val . "\"$prop->{$column}\", ";
+        }
     }
-    say $val;
-
 }
-#warn Dumper $col;
+$col =~ s/, *$//;
+$val =~ s/, *$//;
+# warn Dumper $col;
 # warn Dumper $val;
+my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
+
 say $sql_insert;
+my $sth = $dbh->prepare($sql_insert);
+my $res = $sth->execute();
+say $res;
 
-
-#     (10, 'Anderson', 'Sarah')
 
 $dbh->disconnect();
