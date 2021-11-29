@@ -1,7 +1,7 @@
 
 import re
 
-filename = '21103114.log'
+filename = '../21103114.log'
 
 str_log = ""
 arr = list()
