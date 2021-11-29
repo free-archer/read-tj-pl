@@ -4,9 +4,19 @@ use utf8;
 use Data::Dumper::Simple;
 use Perl6::Say;
 use DateTime qw( );
+use DBI;
 
 binmode(STDIN,':utf8');
 binmode(STDOUT,':utf8');
+
+#SQL CONNECT
+my $dsn = 'DBI:ODBC:Driver={SQL Server}';
+my $db_server = "HD-DEV";
+my $db_name = "tempdb";
+my $db_user = "sa";
+my $db_pass = "SA_1234567890~";
+my $db_table = "tj";
+##
 
 my $filename = '21103114.log';
 #my $filename = 'test.log';
@@ -22,7 +32,7 @@ my $str_log = "";
 my @properties;
 my @main;
 
-my @column = qw(time event level);
+my @columns = qw(id time event level);
 
 #PARSE FILE
 while (my $str = <$fh>) {
@@ -50,9 +60,9 @@ while (my $str = <$fh>) {
             "event"=>$event,
             "level"=>$level,
         );
-        push(@main, \%main);
+        push(@properties, \%main);
 
-        warn Dumper(@main);
+        #warn Dumper(@main);
         # say scalar @main;
 
         if (length($str_log)) {
@@ -73,8 +83,8 @@ say scalar @arr;
 for (my $i=0; $i<scalar @arr; $i++) {
     my %tj;
     while ($arr[$i] =~ m/,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)/g) {
-        unless (grep(/^$1$/, @column)) {
-            push(@column, $1);
+        unless (grep(/^$1$/, @columns)) {
+            push(@columns, $1);
         }
 
         if ($1 eq "Sql") {
@@ -87,5 +97,52 @@ for (my $i=0; $i<scalar @arr; $i++) {
     push(@properties, \%tj);
 }
 
-say scalar @column;
+say scalar @columns;
+my @quote_columns = map {qq|"$_"|} @columns;
 #warn Dumper $properties[0];
+
+#SQL
+my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
+warn Dumper $dbh;
+#$db_table = "tbl1";
+my $sth_create = $dbh->prepare("SELECT * FROM SYSOBJECTS WHERE NAME='$db_table' ");
+say "sth_create";
+warn Dumper $sth_create;
+
+if (0) {
+    #CREATE TABLE
+    #my @quote_columns = map{$dbh->quote($_)} @columns;
+    #warn Dumper @quote_columns;
+
+    my $sql_create_table = "CREATE TABLE $db_table (";
+    foreach my $column (@quote_columns) {
+        $sql_create_table = $sql_create_table . $column . " varchar(255), ";
+    }
+    $sql_create_table = $sql_create_table . ");";
+
+    say $sql_create_table;
+
+    my $sth_create_table = $dbh->prepare($sql_create_table);
+    $sth_create_table->execute()  or die "TABLE was not created: $DBI::errstr";
+}
+
+#INSERT DATA INTO TABLE
+#my $sql_insert = "INSERT INTO $db_table (" . join(", ", @quote_columns) . " VALUES (" . join(", ", @properties[@_]) . ");";
+my $sql_insert = "INSERT INTO $db_table (";
+my $col;
+my $val;
+
+warn Dumper @columns;
+warn Dumper @properties;
+for (my $i=0; $i<scalar @columns; $i++) {
+    # $col = $col . "$columns[i]";
+    # $val = $val . "$properties->[i]->{$columns[i]}";
+
+}
+
+say $sql_insert;
+
+
+#     (10, 'Anderson', 'Sarah')
+
+$dbh->disconnect();
