@@ -6,6 +6,10 @@ use Perl6::Say;
 use DateTime qw( );
 use DBI;
 
+use Win32::Console;
+use Win32::Unicode::File;
+Win32::Console::OutputCP( 65001 );
+
 binmode(STDIN,':utf8');
 binmode(STDOUT,':utf8');
 
@@ -97,7 +101,7 @@ for (my $i=0; $i<scalar @arr; $i++) {
 
 say scalar @columns;
 my @quote_columns = map {qq|"$_"|} @columns;
-#warn Dumper $properties[0];
+warn Dumper $properties[0];
 
 #SQL
 my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
