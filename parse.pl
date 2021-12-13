@@ -100,18 +100,32 @@ for (my $i=0; $i<scalar @arr; $i++) {
 }
 
 say scalar @columns;
+
 my @quote_columns = map {qq|"$_"|} @columns;
-warn Dumper $properties[0];
+warn Dumper @columns;
+warn Dumper @properties;
 
 #SQL
 my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
 warn Dumper $dbh;
-#$db_table = "tbl1";
-my $sth_create = $dbh->prepare("SELECT * FROM SYSOBJECTS WHERE NAME='$db_table' ");
-say "sth_create";
-warn Dumper $sth_create;
+# #$db_table = "tbl1";
+# my $sth_create = $dbh->prepare("SELECT * FROM SYSOBJECTS WHERE NAME='$db_table' ");
+# say "sth_create";
+# warn Dumper $sth_create;
+my $sal_table_exist = <<EOF;
+            IF EXISTS (SELECT 1
+           FROM INFORMATION_SCHEMA.TABLES
+           WHERE TABLE_TYPE='BASE TABLE'
+           AND TABLE_NAME=?)
+           SELECT 1 AS res ELSE SELECT 0 AS res;
+EOF
 
-if (0) {
+my $sth = $dbh->prepare($sal_table_exist) or die $dbh->errstr;
+my $res = $sth->execute($db_table) or die $dbh->errstr;
+my @row = $dbh->selectrow_array($sth);
+warn Dumper @row;
+
+unless (scalar @row) {
     #CREATE TABLE
     #my @quote_columns = map{$dbh->quote($_)} @columns;
     #warn Dumper @quote_columns;
@@ -142,13 +156,18 @@ foreach my $prop (@properties) {
     $val = "";
     my $len = scalar @columns;
     for (my $i = 0; $i < $len; $i++) {
-        my $column = $columns[$i];
+        my $column = "$columns[$i]";
         $col = $col . "$quote_columns[$i], ";
         if (exists $prop->{$column}) {
-            $val = $val . "\"$prop->{$column}\", ";
+            $val = $val . "\'$prop->{$column}\', ";
         }
+        else {
+            $val = $val . "\'null\', ";
+        }
+
     }
-}
+
+#INSERT
 $col =~ s/, *$//;
 $val =~ s/, *$//;
 # warn Dumper $col;
@@ -156,9 +175,9 @@ $val =~ s/, *$//;
 my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
 
 say $sql_insert;
-my $sth = $dbh->prepare($sql_insert);
-my $res = $sth->execute();
+$sth = $dbh->prepare($sql_insert);
+$res = $sth->execute();
 say $res;
-
+}
 
 $dbh->disconnect();
