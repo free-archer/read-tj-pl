@@ -1,15 +1,21 @@
 use warnings FATAL => 'all';
 use strict;
+use Cwd;
+
 use utf8;
 use Data::Dumper::Simple;
 use Perl6::Say;
+use Time::Seconds;
+use Time::Piece;
 
 binmode(STDIN,':utf8');
 binmode(STDOUT,':utf8');
 
-my $start = localtime();
+my $start = Time::Seconds->new(localtime);
 
-my $filename = '21103114.log';
+my $cwd = getcwd();
+    #my $filename = '21103114.log';
+my $filename = $cwd . '/21121413.log';#big
 open(my $fh, '<:encoding(UTF-8)', $filename)
     or die "Could not open file '$filename' $!";
 
@@ -30,7 +36,7 @@ while (my $str = <$fh>) {
         $str_log = join("-#-", $str_log, $str);
     }
 }
-say scalar @arr;
+#say "len:" . scalar @arr;
 
 for (my $i=0; $i<scalar @arr; $i++) {
     my %tj;
@@ -39,9 +45,13 @@ for (my $i=0; $i<scalar @arr; $i++) {
     }
     push(@arrtj, \%tj);
 }
-say scalar @arrtj;
+say "len tj:" . scalar @arrtj;
 #warn Dumper @arrtj;
 
-say localtime();
-my $duration = localtime() - $start;
+
+my $stop = Time::Seconds->new(localtime);
+say "start: " . $start->minutes . ":" . $stop->seconds;
+say "stop: " . $stop->minutes . ":" . $stop->seconds;
+
+my $duration = scalar $stop  - scalar $start;
 say ($duration);
