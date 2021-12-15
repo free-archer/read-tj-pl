@@ -19,11 +19,13 @@ my $db_server = "localhost";
 my $db_name = "tempdb";
 my $db_user = "sa";
 my $db_pass = "cnhtkjr";
-my $db_table = "tj";
+my $db_table = "tjbig3";
 ##
 
-my $filename = '21103114.log';
-#my $filename = 'test.log';
+my $filename = '21121413.log';
+# my $filename = '31121413.log';
+# my $filelog = "result.log";
+
 open(my $fh, '<:encoding(UTF-8)', $filename)
     or die "Could not open file '$filename' $!";
 
@@ -41,14 +43,14 @@ my @columns = qw(id time event level);
 #PARSE FILE
 while (my $str = <$fh>) {
     chomp $str;
-
+    $str =~ s/\'//g;
     if ($str =~ /([0-9]{2}:[0-9]{2}\.[0-9]+\-[0-9]+)\,(\w+)\,(\d+)/)
     {
 
 
         if (length($str_log)) {
             push(@arr, $str_log);
-            #say $str_log;
+            say $str_log;
         }
         $str_log = $str;
     }
@@ -58,7 +60,7 @@ while (my $str = <$fh>) {
     }
 }
 
-say scalar @arr;
+say "Size array: " . scalar @arr;
 
 #GET PROPERTIES
 for (my $i=0; $i<scalar @arr; $i++) {
@@ -99,11 +101,13 @@ for (my $i=0; $i<scalar @arr; $i++) {
     push(@properties, \%tj);
 }
 
-say scalar @columns;
+say "Count columns: " . scalar @columns;
 
 my @quote_columns = map {qq|"$_"|} @columns;
-warn Dumper @columns;
-warn Dumper @properties;
+# warn Dumper @columns;
+# warn Dumper @properties;
+
+say 'Size @properties: ' . scalar @properties;
 
 #SQL
 my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
@@ -123,20 +127,22 @@ EOF
 my $sth = $dbh->prepare($sal_table_exist) or die $dbh->errstr;
 my $res = $sth->execute($db_table) or die $dbh->errstr;
 my @row = $dbh->selectrow_array($sth);
-warn Dumper @row;
+# warn Dumper @row;
+# say  $row[0];
 
-unless (scalar @row) {
+unless ($row[0]) {
+    say "CREATE TABLE $db_table";
     #CREATE TABLE
     #my @quote_columns = map{$dbh->quote($_)} @columns;
     #warn Dumper @quote_columns;
 
     my $sql_create_table = "CREATE TABLE $db_table (";
     foreach my $column (@quote_columns) {
-        $sql_create_table = $sql_create_table . $column . " varchar(255), ";
+        $sql_create_table = $sql_create_table . $column . " varchar(MAX), ";
     }
     $sql_create_table = $sql_create_table . ");";
 
-    say $sql_create_table;
+    # say $sql_create_table;
 
     my $sth_create_table = $dbh->prepare($sql_create_table);
     $sth_create_table->execute()  or die "TABLE was not created: $DBI::errstr";
@@ -151,6 +157,7 @@ my $val = "";
  #warn Dumper $properties[0];
 #print $properties[0];
 # say $tt->{"p:processName"};
+my $i=0;
 foreach my $prop (@properties) {
     $col = "";
     $val = "";
@@ -167,17 +174,29 @@ foreach my $prop (@properties) {
 
     }
 
-#INSERT
-$col =~ s/, *$//;
-$val =~ s/, *$//;
-# warn Dumper $col;
-# warn Dumper $val;
-my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
+    #INSERT
+    $col =~ s/, *$//;
+    $val =~ s/, *$//;
+    # warn Dumper $col;
+    # warn Dumper $val;
+    my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
 
-say $sql_insert;
-$sth = $dbh->prepare($sql_insert);
-$res = $sth->execute();
-say $res;
+    say $sql_insert;
+    $sth = $dbh->prepare($sql_insert) or die $dbh->errstr;
+    $res = $sth->execute() or die $dbh->errstr;
+    # say $res;
+    $i++;
+    say "insert row $i";
+
+
 }
 
 $dbh->disconnect();
+
+# function writelog(file,str); {
+#     open(FHLOG, '>>:encoding(UTF-8)', $file) or die $!;
+#     print (FHLOG "$str\n");
+#     close(FHLOG);
+#     return 1;
+# }
+
