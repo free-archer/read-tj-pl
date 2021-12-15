@@ -19,12 +19,11 @@ my $db_server = "localhost";
 my $db_name = "tempdb";
 my $db_user = "sa";
 my $db_pass = "cnhtkjr";
-my $db_table = "tjbig3";
+my $db_table = "tj_test1";
 ##
 
-my $filename = '21121413.log';
+my $filename = '31121507.log';
 # my $filename = '31121413.log';
-# my $filelog = "result.log";
 
 open(my $fh, '<:encoding(UTF-8)', $filename)
     or die "Could not open file '$filename' $!";
@@ -43,14 +42,14 @@ my @columns = qw(id time event level);
 #PARSE FILE
 while (my $str = <$fh>) {
     chomp $str;
-    $str =~ s/\'//g;
+    # $str =~ s/\'//g;
     if ($str =~ /([0-9]{2}:[0-9]{2}\.[0-9]+\-[0-9]+)\,(\w+)\,(\d+)/)
     {
 
 
         if (length($str_log)) {
             push(@arr, $str_log);
-            say $str_log;
+            # say $str_log;
         }
         $str_log = $str;
     }
@@ -86,15 +85,29 @@ for (my $i=0; $i<scalar @arr; $i++) {
         "level"=>$level,
     );
 
+    #,([A-Za-z0-9_А-Яа-я:]+)='([^']+) - select all ='*'
+    #(Sql|planSQLText|Context)='([^']+) - select only Sql|planSQLText|Context
+
+    #PARSE Sql|planSQLText|Context
+    my $val;
+    my $prop;
+    while ($arr[$i] =~ m/,([A-Za-z0-9_А-Яа-я:]+)='([^']+)/g) {
+        my $prop = $1;
+        my $val = $2;
+        unless (grep(/^$prop/, @columns)) {
+            push(@columns, $prop);
+        }
+        $tj{$prop} = $val;
+        $tj{$prop} =~ s/-#-/\n/g;
+
+    }
+
+    #PARSE PARAMS
     while ($arr[$i] =~ m/,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)/g) {
-        unless (grep(/^$1$/, @columns)) {
+        unless (grep(/^$1/, @columns)) {
             push(@columns, $1);
         }
-
-        if ($1 eq "Sql") {
-            $tj{$1} = split(/=#=/, $2);
-        }
-        else {
+        if ($1 ne "Sql" and $1 ne "Context" and $1 ne "planSQLText") {
             $tj{$1} = $2;
         }
     }
@@ -104,18 +117,20 @@ for (my $i=0; $i<scalar @arr; $i++) {
 say "Count columns: " . scalar @columns;
 
 my @quote_columns = map {qq|"$_"|} @columns;
-# warn Dumper @columns;
-# warn Dumper @properties;
+warn Dumper @columns;
+warn Dumper @properties;
 
 say 'Size @properties: ' . scalar @properties;
 
 #SQL
 my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
-warn Dumper $dbh;
+# warn Dumper $dbh;
 # #$db_table = "tbl1";
 # my $sth_create = $dbh->prepare("SELECT * FROM SYSOBJECTS WHERE NAME='$db_table' ");
 # say "sth_create";
 # warn Dumper $sth_create;
+
+#EXIST TABLE
 my $sal_table_exist = <<EOF;
             IF EXISTS (SELECT 1
            FROM INFORMATION_SCHEMA.TABLES
@@ -130,6 +145,7 @@ my @row = $dbh->selectrow_array($sth);
 # warn Dumper @row;
 # say  $row[0];
 
+#CREATE TABLE
 unless ($row[0]) {
     say "CREATE TABLE $db_table";
     #CREATE TABLE
@@ -142,7 +158,7 @@ unless ($row[0]) {
     }
     $sql_create_table = $sql_create_table . ");";
 
-    # say $sql_create_table;
+     say $sql_create_table;
 
     my $sth_create_table = $dbh->prepare($sql_create_table);
     $sth_create_table->execute()  or die "TABLE was not created: $DBI::errstr";
@@ -181,22 +197,12 @@ foreach my $prop (@properties) {
     # warn Dumper $val;
     my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
 
-    say $sql_insert;
+    # say $sql_insert;
     $sth = $dbh->prepare($sql_insert) or die $dbh->errstr;
     $res = $sth->execute() or die $dbh->errstr;
     # say $res;
     $i++;
     say "insert row $i";
-
-
 }
 
 $dbh->disconnect();
-
-# function writelog(file,str); {
-#     open(FHLOG, '>>:encoding(UTF-8)', $file) or die $!;
-#     print (FHLOG "$str\n");
-#     close(FHLOG);
-#     return 1;
-# }
-
