@@ -14,6 +14,11 @@ password = 'cnhtkjr'
 db_table = "tjpy2"
 #SQL Connect
 
+def append_to_dict(D_params, lparams):
+    for params in lparams:
+        D_params[params[0].lower()] = params[1]
+    
+
 str_log = ""
 arr = list()
 
@@ -50,45 +55,27 @@ for elem in arr:
     #SQL ,([A-Za-z0-9_А-Яа-я:]+)='([^']+)
     #SQL2 ,(\w+)='([\w|\d|\s|\-|#|\.|,|(|)|:|=|/|\?|;]+)',
     #,(\w+)="([\w|\d|\s|\-|#|\.|,|(|)|:|=|/|\?|;]+)",
-
     #(Sql|planSQLText|Context) ',(\w+)='([^']+)' or ',(\w+)="([^"]+)'
-
     #papam ,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)
-    paramssql = re.search(r",(\w+)='([^']+)", elem)
-    if paramssql is not None:
-        lparams.append(paramssql.groups())
-    #lparams.append(paramssql)
+
+    Dict_params = {}
+
+    params = re.findall(r",(\w+)='([^']+)", elem)
+    append_to_dict(Dict_params, params)
     elem = re.sub(r",(\w+)='([^']+)", "", elem)
     
-    paramssql2 = re.search(r',(\w+)="([^"]+)', elem)
-    if paramssql2 is not None:
-        lparams.append(paramssql2.groups())
+    params = re.findall(r',(\w+)="([^"]+)', elem)
+    append_to_dict(Dict_params, params)
     elem = re.sub(r',(\w+)="([^"]+)', "", elem)
 
-    params = re.search(r',([A-Za-z0-9А-Яа-я:]+)=([^,]+)', elem)
-    if params is not None:
-        lparams.append(params.groups())
-    # ltemp = (*params.groups(), *paramssql, *paramssql2)
+    params = re.findall(r',([A-Za-z0-9А-Яа-я:]+)=([^,]+)', elem)
+    append_to_dict(Dict_params, params)
 
-    # if len(ltemp):
-    #     lparams.append(ltemp)
-        #print (param)
+    if len(Dict_params):
+        lparams.append(Dict_params)
 
 print(f"Длинна списка параметров: {len(lparams)}")
 
-#GET LIST COLUMS
-lcolums = list()
-for params in lparams:
-    for param in params:
-        column = param.lower()
-        if column in lcolums:
-            pass
-        else:
-            lcolums.append(column)
-
-# print(lcolums)
-#lcolums = set(lcolums)
-# print(lcolums)
 #exit(0)
 #SQL
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
@@ -97,8 +84,16 @@ cursor = cnxn.cursor()
 if not cursor.tables(table=db_table, tableType='TABLE').fetchone():
     print("doesn't exist")
 
+    #GET LIST UNIQUE COLUMS
+    lcolumns = list()
+    for params in lparams:
+        for column, value in params.items():
+            if column not in lcolumns:
+                lcolumns.append(column)
+
+    #CREATE TABLE
     sql_create_table = "CREATE TABLE " + db_table + " ("
-    for column in lcolums:
+    for column in lcolumns:
         sql_create_table = sql_create_table + '"'+column+'"' + " varchar(MAX), "
 
     sql_create_table = sql_create_table + ");"
@@ -111,35 +106,26 @@ if not cursor.tables(table=db_table, tableType='TABLE').fetchone():
 #INSERT DATA
 inserted = 0
 for params in lparams:
-    colums = ""
-    values = ""
-    lvalues = list()
-    spar = ""
+    columns = ""
+
+    for column, value in params.items():
+        columns= columns + '"'+column+'"' + ","
+
+    columns = columns.rstrip(',')
+
+    val = ('?,' * len(params)).rstrip(',')
+
     sql_query = "INSERT INTO " + db_table + " ("
-    for param in params:
-        col = param[0]
-        val = param[1]
+    sql_query = sql_query + columns + ") VALUES ( " + val + ");"
+    #print(sql_query)
 
-        colums= colums + '"'+col+'"' + ","
-        values= values + "'"+val+"'" + ","
-        spar= spar + "?,"
-        lvalues.append(val)
+    lvalues= list(params.values())
 
-# print(colums)
-# print(values)
-
-    colums = colums.rstrip(',')
-    values = values.rstrip(',')
-    spar = spar.rstrip(',')
-
-    #sql_query = sql_query + colums + ") VALUES ( " + values + ");"
-    sql_query = sql_query + colums + ") VALUES ( " + spar + ");"
-    print(sql_query)
-
-    #count = cursor.execute(sql_query).rowcount
     count = cursor.execute(sql_query, lvalues).rowcount
     cnxn.commit()
-    inserted=+1
+    inserted += 1
     print(f"Вставили запись: {inserted}")
 
 print(f"Количество записей в базе: {inserted}")
+
+
