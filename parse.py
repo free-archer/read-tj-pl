@@ -54,19 +54,24 @@ for elem in arr:
     #(Sql|planSQLText|Context) ',(\w+)='([^']+)' or ',(\w+)="([^"]+)'
 
     #papam ,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)
-    paramssql = re.findall(r",(\w+)='([^']+)", elem)
-    lparams.append(paramssql)
+    paramssql = re.search(r",(\w+)='([^']+)", elem)
+    if paramssql is not None:
+        lparams.append(paramssql.groups())
+    #lparams.append(paramssql)
     elem = re.sub(r",(\w+)='([^']+)", "", elem)
     
-    paramssql2 = re.findall(r',(\w+)="([^"]+)', elem)
-    lparams.append(paramssql2)
+    paramssql2 = re.search(r',(\w+)="([^"]+)', elem)
+    if paramssql2 is not None:
+        lparams.append(paramssql2.groups())
     elem = re.sub(r',(\w+)="([^"]+)', "", elem)
 
-    params = re.findall(r',([A-Za-z0-9А-Яа-я:]+)=([^,]+)', elem)
-    ltemp = (*params, *paramssql, *paramssql2)
+    params = re.search(r',([A-Za-z0-9А-Яа-я:]+)=([^,]+)', elem)
+    if params is not None:
+        lparams.append(params.groups())
+    # ltemp = (*params.groups(), *paramssql, *paramssql2)
 
-    if len(ltemp):
-        lparams.append(ltemp)
+    # if len(ltemp):
+    #     lparams.append(ltemp)
         #print (param)
 
 print(f"Длинна списка параметров: {len(lparams)}")
@@ -75,7 +80,7 @@ print(f"Длинна списка параметров: {len(lparams)}")
 lcolums = list()
 for params in lparams:
     for param in params:
-        column = param[0].lower()
+        column = param.lower()
         if column in lcolums:
             pass
         else:
