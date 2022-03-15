@@ -2,6 +2,8 @@ import re
 import datetime
 import pyodbc
 
+start_time = datetime.datetime.now()
+print("Start: {start_time}")
 
 #filename = '22022411.log'#test
 filename = '22031506.log'# 1GB
@@ -127,4 +129,6 @@ for params in lparams:
 
 print(f"Количество записей в базе: {inserted}")
 
+end_time = datetime.datetime.now()
+print(f"Время выполнения: {end_time - start_time}")
 
