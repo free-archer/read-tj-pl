@@ -2,16 +2,18 @@ import re
 import datetime
 import pyodbc
 
+start_time = datetime.datetime.now()
+print(f"Start: {start_time}")
 
 filename = '22022411.log'
-#filename = '211003111.log'
+#filename = '22031506.log'#1Gb
 
 #SQL Connect
 server = 'localhost'
 database = 'tempdb'
 username = 'sa'
 password = 'cnhtkjr'
-db_table = "tjpy2"
+db_table = "tjpy3"
 #SQL Connect
 
 str_log = ""
@@ -36,7 +38,6 @@ print (f"Длинна массива: {len(arr)}")
 # with open("_"+filename, "w", encoding="utf-8-sig") as fw:
 #     fw.writelines("\n".join(arr))
 
-
 #2. Получаем список параметров
 fileparams = re.findall(r'(\d{2})(\d{2})(\d{2})(\d{2})', filename)
 (year, month, day, hour) = fileparams[0]
@@ -47,13 +48,6 @@ for elem in arr:
     date_time_str = f'20{year}-{month}-{day} {hour}:{minute}:{second}.{msec}'
     time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S.%f')
 
-    #SQL ,([A-Za-z0-9_А-Яа-я:]+)='([^']+)
-    #SQL2 ,(\w+)='([\w|\d|\s|\-|#|\.|,|(|)|:|=|/|\?|;]+)',
-    #,(\w+)="([\w|\d|\s|\-|#|\.|,|(|)|:|=|/|\?|;]+)",
-
-    #(Sql|planSQLText|Context) ',(\w+)='([^']+)' or ',(\w+)="([^"]+)'
-
-    #papam ,([A-Za-z0-9_А-Яа-я:]+)=([^,]+)
     paramssql = re.findall(r",(\w+)='([^']+)", elem)
     lparams.append(paramssql)
     elem = re.sub(r",(\w+)='([^']+)", "", elem)
@@ -67,7 +61,6 @@ for elem in arr:
 
     if len(ltemp):
         lparams.append(ltemp)
-        #print (param)
 
 print(f"Длинна списка параметров: {len(lparams)}")
 
@@ -81,10 +74,6 @@ for params in lparams:
         else:
             lcolums.append(column)
 
-# print(lcolums)
-#lcolums = set(lcolums)
-# print(lcolums)
-#exit(0)
 #SQL
 cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
 cursor = cnxn.cursor()
@@ -98,7 +87,6 @@ if not cursor.tables(table=db_table, tableType='TABLE').fetchone():
 
     sql_create_table = sql_create_table + ");"
 
-    #print (sql_create_table)
     cursor.execute(sql_create_table)
     cnxn.commit()
     print(cursor)
@@ -106,6 +94,7 @@ if not cursor.tables(table=db_table, tableType='TABLE').fetchone():
 #INSERT DATA
 inserted = 0
 for params in lparams:
+    if len(params) == 0: next
     colums = ""
     values = ""
     lvalues = list()
@@ -120,21 +109,19 @@ for params in lparams:
         spar= spar + "?,"
         lvalues.append(val)
 
-# print(colums)
-# print(values)
-
     colums = colums.rstrip(',')
     values = values.rstrip(',')
     spar = spar.rstrip(',')
 
-    #sql_query = sql_query + colums + ") VALUES ( " + values + ");"
     sql_query = sql_query + colums + ") VALUES ( " + spar + ");"
     print(sql_query)
 
-    #count = cursor.execute(sql_query).rowcount
     count = cursor.execute(sql_query, lvalues).rowcount
     cnxn.commit()
     inserted=+1
     print(f"Вставили запись: {inserted}")
 
 print(f"Количество записей в базе: {inserted}")
+
+end_time = datetime.datetime.now()
+print(f"Время выполнения: {end_time - start_time}")
