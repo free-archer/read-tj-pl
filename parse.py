@@ -3,7 +3,7 @@ import datetime
 import pyodbc
 
 start_time = datetime.datetime.now()
-print("Start: {start_time}")
+print(f"Start: {start_time}")
 
 #filename = '22022411.log'#test
 filename = '22031506.log'# 1GB
