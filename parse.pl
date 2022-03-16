@@ -22,14 +22,11 @@ my $db_pass = "cnhtkjr";
 my $db_table = "tj_test1";
 ##
 
-my $filename = '31121507.log';
-# my $filename = '31121413.log';
+my $filename = '22022411.log';
+#my $filename = '22031506.log';#1GB
 
 open(my $fh, '<:encoding(UTF-8)', $filename)
     or die "Could not open file '$filename' $!";
-
-#"([0-9]{2}):([0-9]{2})\.([0-9]+)\-([0-9]+)\,(\w+)\,(\d+)"
-#",([A-Za-z0-9_А-Яа-я:]+)=([^,]+)"
 
 my @arr;
 my @temp;
@@ -85,9 +82,6 @@ for (my $i=0; $i<scalar @arr; $i++) {
         "level"=>$level,
     );
 
-    #,([A-Za-z0-9_А-Яа-я:]+)='([^']+) - select all ='*'
-    #(Sql|planSQLText|Context)='([^']+) - select only Sql|planSQLText|Context
-
     #PARSE Sql|planSQLText|Context
     my $val;
     my $prop;
@@ -117,20 +111,16 @@ for (my $i=0; $i<scalar @arr; $i++) {
 say "Count columns: " . scalar @columns;
 
 my @quote_columns = map {qq|"$_"|} @columns;
-warn Dumper @columns;
-warn Dumper @properties;
+# warn Dumper @columns;
+# warn Dumper @properties;
 
 say 'Size @properties: ' . scalar @properties;
 
 #SQL
 my $dbh = DBI->connect("$dsn;Server=$db_server;Database=$db_name", $db_user, $db_pass) or die "Database connection not made: $DBI::errstr";
-# warn Dumper $dbh;
-# #$db_table = "tbl1";
-# my $sth_create = $dbh->prepare("SELECT * FROM SYSOBJECTS WHERE NAME='$db_table' ");
-# say "sth_create";
-# warn Dumper $sth_create;
 
 #EXIST TABLE
+say 'To Check table exists';
 my $sal_table_exist = <<EOF;
             IF EXISTS (SELECT 1
            FROM INFORMATION_SCHEMA.TABLES
@@ -149,30 +139,22 @@ my @row = $dbh->selectrow_array($sth);
 unless ($row[0]) {
     say "CREATE TABLE $db_table";
     #CREATE TABLE
-    #my @quote_columns = map{$dbh->quote($_)} @columns;
-    #warn Dumper @quote_columns;
-
     my $sql_create_table = "CREATE TABLE $db_table (";
     foreach my $column (@quote_columns) {
         $sql_create_table = $sql_create_table . $column . " varchar(MAX), ";
     }
     $sql_create_table = $sql_create_table . ");";
 
-     say $sql_create_table;
+    #say $sql_create_table;
 
     my $sth_create_table = $dbh->prepare($sql_create_table);
     $sth_create_table->execute()  or die "TABLE was not created: $DBI::errstr";
 }
-
+exit(0);
 #INSERT DATA INTO TABLE
-#my $sql_insert = "INSERT INTO $db_table (" . join(", ", @quote_columns) . " VALUES (" . join(", ", @properties[@_]) . ");";
 my $col = "";
 my $val = "";
 
-# my $tt = $properties[1];
- #warn Dumper $properties[0];
-#print $properties[0];
-# say $tt->{"p:processName"};
 my $i=0;
 foreach my $prop (@properties) {
     $col = "";
@@ -187,14 +169,11 @@ foreach my $prop (@properties) {
         else {
             $val = $val . "\'null\', ";
         }
-
     }
 
     #INSERT
     $col =~ s/, *$//;
     $val =~ s/, *$//;
-    # warn Dumper $col;
-    # warn Dumper $val;
     my $sql_insert = "INSERT INTO $db_table ($col) VALUES($val);";
 
     # say $sql_insert;
