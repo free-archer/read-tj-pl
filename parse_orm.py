@@ -1,11 +1,14 @@
 import re
 import datetime
-import pyodbc
+from sqlalchemy import create_engine, MetaData, inspect
+from sqlalchemy import Table, Column, String
+from sqlalchemy import insert
 
 start_time = datetime.datetime.now()
 print(f"Start: {start_time}")
 
-#filename = '22022411.log'#test
+#filename = '21103114.log'#test
+#filename = '22022411.log'#small
 filename = '22031506.log'# 1GB
 
 #SQL Connect
@@ -13,7 +16,11 @@ server = 'localhost'
 database = 'tempdb'
 username = 'sa'
 password = 'cnhtkjr'
-db_table = "tjpy2"
+db_table = "tjpy7"
+# pyodbc
+#engine = create_engine('mssql+pyodbc://scott:tiger@mydsn')
+# pymssql
+#engine = create_engine('mssql+pymssql://scott:tiger@hostname:port/dbname')
 #SQL Connect
 
 def append_to_dict(D_params, lparams):
@@ -29,7 +36,6 @@ mainArray = list()
 with open(filename, "r", encoding="utf-8-sig") as f:
     for str in f.readlines():
         str = str.strip()
-        #'([0-9]{2}):([0-9]{2})\.([0-9]+)\-([0-9]+)\,(\w+)\,(\d+)'
         if (re.match(r'\d{2}:\d{2}.\d{6}-\d', str)):
             if (len(str_log)): mainArray.append(str_log)
 
@@ -40,11 +46,6 @@ with open(filename, "r", encoding="utf-8-sig") as f:
 
 print (f"Длинна массива: {len(mainArray)}")
 print(f"Время подготовки массива строк: {datetime.datetime.now() - start_time}")
-
-#Запишем для теста
-# with open("_"+filename, "w", encoding="utf-8-sig") as fw:
-#     fw.writelines("\n".join(mainArray))
-
 
 #2. Получаем список параметров
 fileparams = re.findall(r'(\d{2})(\d{2})(\d{2})(\d{2})', filename)
@@ -58,17 +59,6 @@ for elem in mainArray:
     Dict_params = {'time':date_time_str}
 
     re_patterns = (",(\w+)='([^']+)", ',(\w+)="([^"]+)', ',([A-Za-z0-9А-Яа-я:]+)=([^,]+)')
-    # params = re.findall(r",(\w+)='([^']+)", elem)
-    # append_to_dict(Dict_params, params)
-    # elem = re.sub(r",(\w+)='([^']+)", "", elem)
-    
-    # params = re.findall(r',(\w+)="([^"]+)', elem)
-    # append_to_dict(Dict_params, params)
-    # elem = re.sub(r',(\w+)="([^"]+)', "", elem)
-
-    # params = re.findall(r',([A-Za-z0-9А-Яа-я:]+)=([^,]+)', elem)
-    # append_to_dict(Dict_params, params)
-
     for pattern in re_patterns:
         params = re.findall(pattern, elem)
         append_to_dict(Dict_params, params)
@@ -82,53 +72,47 @@ print(f"Длинна списка параметров: {len(lparams)}")
 print(f"Разбор параметров: {datetime.datetime.now() - start_time}")
 
 #exit(0)
-#SQL
-cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+server+';DATABASE='+database+';UID='+username+';PWD='+ password)
-cursor = cnxn.cursor()
+#SQL CONNECT
+engine = create_engine(f"mssql+pymssql://{username}:{password}@{server}/{database}", echo=False, future=False)
+#engine = create_engine(f'mssql+pyodbc://{username}:{password}@{server}')
+#engine = create_engine('sqlite:///foo2.db')
+metadata = MetaData(engine)
 
-if not cursor.tables(table=db_table, tableType='TABLE').fetchone():
-    print("doesn't exist")
+#CHECK TABLE
+inspect = inspect(engine)
+tables_in_base = inspect.get_table_names()
 
+if db_table in tables_in_base:
+    dbTable = Table(db_table, metadata, autoload_with=engine)
+else:
+    print("The table doesn't exist")
     #GET LIST UNIQUE COLUMS
     lcolumns = list()
     for params in lparams:
         for column, value in params.items():
             if column not in lcolumns:
                 lcolumns.append(column)
+                
+    l_Column = list()
+    for column in lcolumns:
+        l_Column.append(Column(column, String))
 
     #CREATE TABLE
-    sql_create_table = "CREATE TABLE " + db_table + " ("
-    for column in lcolumns:
-        sql_create_table = sql_create_table + '"'+column+'"' + " varchar(MAX), "
-    sql_create_table = sql_create_table + ");"
-
-    #print (sql_create_table)
-    cursor.execute(sql_create_table)
-    cnxn.commit()
-    print(cursor)
+    dbTable = Table(db_table, metadata, *l_Column)
+    metadata.create_all()
 
 print(f"Определение таблицы БД: {datetime.datetime.now() - start_time}")
 
 #INSERT DATA
 inserted = 0
+conn = engine.connect()
+# ins = dbTable.insert().values(lparams)
+# result = conn.execute(ins)
+
 for params in lparams:
-    columns = ""
-    lvalues = []
-    
-    for column, value in params.items():
-        columns= columns + '"'+column+'"' + ","
-        lvalues.append(value)
+    ins = dbTable.insert().values(**params)
+    result = conn.execute(ins)
 
-    columns = columns.rstrip(',')
-
-    val = ('?,' * len(lvalues)).rstrip(',')
-
-    sql_query = "INSERT INTO " + db_table + " ("
-    sql_query = sql_query + columns + ") VALUES ( " + val + ");"
-    #print(sql_query)
-
-    count = cursor.execute(sql_query, lvalues).rowcount
-    cnxn.commit()
     inserted += 1
     print(f"Вставили запись: {inserted}")
 

@@ -4,3 +4,4 @@
 test*
 *.sql
 *.txt
+*.db
