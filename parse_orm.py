@@ -17,10 +17,6 @@ database = 'tempdb'
 username = 'sa'
 password = 'cnhtkjr'
 db_table = "tjpy7"
-# pyodbc
-#engine = create_engine('mssql+pyodbc://scott:tiger@mydsn')
-# pymssql
-#engine = create_engine('mssql+pymssql://scott:tiger@hostname:port/dbname')
 #SQL Connect
 
 def append_to_dict(D_params, lparams):
@@ -106,9 +102,6 @@ print(f"Определение таблицы БД: {datetime.datetime.now() - s
 #INSERT DATA
 inserted = 0
 conn = engine.connect()
-# ins = dbTable.insert().values(lparams)
-# result = conn.execute(ins)
-
 for params in lparams:
     ins = dbTable.insert().values(**params)
     result = conn.execute(ins)
