@@ -11,4 +11,5 @@ dist
 venv
 _*_
 *.spec
+*.exe
 
