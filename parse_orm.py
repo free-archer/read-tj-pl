@@ -21,7 +21,7 @@ db_table = "tjpy7"
 
 def append_to_dict(D_params, lparams):
     for params in lparams:
-        D_params[params[0].lower()] = params[1].replace("-#-", '\n')
+        D_params[params[0].lower()] = params[1].replace("'","").replace("''","").replace("-#-", '\n')
     
 print(f"Время чтения файла: {datetime.datetime.now() - start_time}")
 
