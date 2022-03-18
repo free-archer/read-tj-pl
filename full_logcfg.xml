@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns="http://v8.1c.ru/v8/tech-log">
+	<log location="C:\LOGS\" history="2">
+		<event>
+			<ne property="Name" value=""/>
+		</event>
+		<property name="all"/>
+	</log>
+	<plansql/>
+</config>
