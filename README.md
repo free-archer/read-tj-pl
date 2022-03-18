@@ -3,6 +3,11 @@
 My attention to parse technological journal 1C
 Попытка разобрать технологический журнал 1С с помощью perl
 
+## Установка
+
+`python -m virtualenv env`
+
+`pip install -r .\requirements.txt`
 
 ## Замеры времени выполнения
 
@@ -29,7 +34,9 @@ My attention to parse technological journal 1C
 
 ##### Вставка происходит в цикле по одному запросу, в качестве драйвера используется pymssql
 
-Время выполнения: 0:09:39
+Время выполнения: 0:09:39 mssql сервер
+
+Время выполнения: 0:09:28 postgres сервер
 
 Потребление памяти 3,365 Gb
 
