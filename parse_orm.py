@@ -1,23 +1,26 @@
+import os
 import re
 import datetime
 from sqlalchemy import create_engine, MetaData, inspect
 from sqlalchemy import Table, Column, String
-from sqlalchemy import insert
 
 start_time = datetime.datetime.now()
 print(f"Start: {start_time}")
 
-filename = '21103114.log'#small
-#filename = '22022411.log'#test
-#filename = '22031506.log'# 1GB
-
+#VARS
+filename= os.environ.get('filename')
 #SQL Connect
-server = 'localhost'
-database = 'tempdb'
-username = 'sa'
-password = 'cnhtkjr'
-db_table = "tjpy7"
+sql_type = os.environ.get('sql_type')
+#MSSQL/Postgres
+server = os.environ.get('server')
+database = os.environ.get('database')
+username = os.environ.get('username')
+password = os.environ.get('password')
+db_table = os.environ.get('table')
+#SQLight
+db_file = os.environ.get('db_file')
 #SQL Connect
+#VARS
 
 def append_to_dict(D_params, lparams):
     for params in lparams:
@@ -69,9 +72,18 @@ print(f"Разбор параметров: {datetime.datetime.now() - start_time
 
 #exit(0)
 #SQL CONNECT
-engine = create_engine(f"mssql+pymssql://{username}:{password}@{server}/{database}", echo=False, future=False)
-#engine = create_engine(f'mssql+pyodbc://{username}:{password}@{server}')
-#engine = create_engine('sqlite:///foo2.db')
+match sql_type:
+    case "mssql":
+        connect_string = f"mssql+pymssql://{username}:{password}@{server}/{database}"
+    case "postgres":
+        connect_string = f"postgresql+psycopg2://{username}:{password}@{server}/{database}"
+    case "sqlight":
+        connect_string = f"sqlite:///{db_file}"
+    case _:
+        print('Не определен тип базы данных')
+        exit(0)
+
+engine = create_engine(connect_string, echo=False, future=False)
 metadata = MetaData(engine)
 
 #CHECK TABLE

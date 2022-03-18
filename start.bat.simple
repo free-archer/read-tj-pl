@@ -1,0 +1,18 @@
+@echo off
+REM Путь к файлу с логами технологического журнала 1С
+set filename=21103114.log
+
+REM Параметры соединения с базой данных. Для MSSQL и postgres совпадают.
+set sql_type=sqlight
+REM sql_type может принимать заначения: mssql, postgres, sqlight
+set server=localhost
+set database=tempdb
+set username=sa
+set password=pass
+set table=table_name
+REM Для SQLight достаточно указать только имя или путь к файлу. Файл будет создан в текущей директории запуска.
+set db_file=foo2.db
+
+python parse_orm.py
+
+pause

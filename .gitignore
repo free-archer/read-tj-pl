@@ -5,3 +5,10 @@ test*
 *.sql
 *.txt
 *.db
+*.bat
+build
+dist
+venv
+_*_
+*.spec
+
