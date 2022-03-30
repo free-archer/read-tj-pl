@@ -44,7 +44,7 @@ https://github.com/free-archer/read-tj-pl/archive/refs/tags/v1.0.0.zip
 
 Задайте в файле необходимые параметры, они вполне понятны.
 
-`
+```
 @echo off
 REM Путь к файлу с логами технологического журнала 1С
 set filename=21103114.log
@@ -59,7 +59,7 @@ set password=pass
 set table=table_name
 REM Для SQLight достаточно указать только имя или путь к файлу. Файл будет создан в текущей директории запуска.
 set db_file=foo2.db
-`
+```
 
 После чего выполните запуск bat-файла.
 
