@@ -1,5 +1,5 @@
-/.idea/
-/.vscode/
+.idea/
+.vscode/
 *.log
 test*
 *.sql
@@ -12,4 +12,5 @@ venv
 _*_
 *.spec
 *.exe
-
+bin/
+obj/
