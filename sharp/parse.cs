@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 internal class Parse {
     private static void append_to_dict(Dictionary<String, String>  D_params, MatchCollection matchesp) {
@@ -12,6 +14,13 @@ internal class Parse {
       }
 
     }
+
+    public class SqliteDbContext :  DbContext {
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+            optionsBuilder.UseSqlite("Filename=./db.sqlite");
+        }
+    }
+   
 
     private static void Main(String[] args) {
       Stopwatch stopwatch = new Stopwatch();
@@ -96,7 +105,17 @@ internal class Parse {
         }
 
       }
-      
+
+    Console.WriteLine($"Длинна списка параметров: {lparams.Count}");
+    Console.WriteLine($"Разбор параметров: {stopwatch.ElapsedMilliseconds}");
+
+    //#SQL CONNECT
+    String DbPath = System.IO.Path.Join("./", "blogging.db");
+
+    var context = new SqliteDbContext();
+    // Start with a clean database
+    context.Database.EnsureDeleted();
+    context.Database.EnsureCreated();        
 
 
     stopwatch.Stop();
