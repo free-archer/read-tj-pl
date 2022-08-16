@@ -8,9 +8,11 @@ internal class Parse {
       foreach (Match matchp in matchesp) {
         GroupCollection groupsp = matchp.Groups;
         String value = groupsp[2].Value;
-        value = value.Replace("'","").Replace("''","").Replace("-#-", @"\n");
+        value = value.Replace("'","").Replace("''","").Replace("-#-", "\n");
+        String key = groupsp[1].Value.ToLower().Replace(":", "_");
 
-        D_params.Add(groupsp[1].Value.ToLower(), value);
+        
+        D_params.TryAdd(key, value);
       }
 
     }
@@ -24,7 +26,7 @@ internal class Parse {
       Dictionary<String, String> Dict_params;
       List<Dictionary<String, String>> lparams = new List<Dictionary<String, String>>();
 
-      String filename = "21103114.log";
+      String filename = "22031506.log";
       String db_table = "tj";
 
       if (!File.Exists(filename)) {
@@ -132,16 +134,32 @@ internal class Parse {
     cmd.ExecuteNonQuery();
 
     //#INSERT DATA
+    String scolumns = "";
+    String svalues= "";
 
     foreach (var dicparam in lparams) {
+      scolumns = "";
+      svalues= "";
+      cmd.Parameters.Clear();
+      foreach (var param in dicparam) {
 
-      int countKey = dicparam.Keys.Count();
+        scolumns = scolumns + $"{param.Key},";
+        svalues = svalues + $"@{param.Key},";
+      
+        cmd.Parameters.AddWithValue($"@{param.Key}", $"{param.Value}");
 
-
-      String sql_query = $"INSERT INTO {db_table} (";
-      sql_query = sql_query + columns + ") VALUES ( " + "val" + ");";
+      
+      }
+      scolumns = scolumns.Trim(',');
+      svalues = svalues.Trim(',');
+      String sql_query = $"INSERT INTO {db_table} ({scolumns}) VALUES ({svalues});";
+      
+      cmd.CommandText = sql_query;
+      cmd.Prepare();
+      cmd.ExecuteNonQuery();      
     }
 
-
+    Console.WriteLine($"Количество записей в базе: {lparams.Count}");
+    Console.WriteLine($"Время выполнения: {stopwatch.ElapsedMilliseconds}");
   }
 }
