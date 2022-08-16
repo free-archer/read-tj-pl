@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+using Microsoft.Data.Sqlite;
+
 
 internal class Parse {
     private static void append_to_dict(Dictionary<String, String>  D_params, MatchCollection matchesp) {
@@ -15,13 +15,6 @@ internal class Parse {
 
     }
 
-    public class SqliteDbContext :  DbContext {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-            optionsBuilder.UseSqlite("Filename=./db.sqlite");
-        }
-    }
-   
-
     private static void Main(String[] args) {
       Stopwatch stopwatch = new Stopwatch();
       stopwatch.Start();
@@ -32,6 +25,7 @@ internal class Parse {
       List<Dictionary<String, String>> lparams = new List<Dictionary<String, String>>();
 
       String filename = "21103114.log";
+      String db_table = "tj";
 
       if (!File.Exists(filename)) {
         Console.WriteLine($"File {filename} do not exist!");
@@ -110,15 +104,44 @@ internal class Parse {
     Console.WriteLine($"Разбор параметров: {stopwatch.ElapsedMilliseconds}");
 
     //#SQL CONNECT
-    String DbPath = System.IO.Path.Join("./", "blogging.db");
-
-    var context = new SqliteDbContext();
-    // Start with a clean database
-    context.Database.EnsureDeleted();
-    context.Database.EnsureCreated();        
-
-
-    stopwatch.Stop();
-    Console.WriteLine($"Done! Run time: {stopwatch.ElapsedMilliseconds}");
+    List<String> lcolumns = new List<string>();
+    foreach (var dicparam in lparams) {
+      foreach (var key in dicparam.Keys) {
+        lcolumns.Add(key);
+      }
     }
+    var columns = lcolumns.Distinct().ToArray<String>();
+
+    //#CREATE TABLE
+    String sql_create_table = $"CREATE TABLE {db_table} (";
+    foreach (String column in columns) {
+        sql_create_table = sql_create_table + "'"+column+"'"+" TEXT,";
+    }
+    sql_create_table = sql_create_table.Trim(',') + ");";
+
+    string cs = "Data Source=usersdata.db";
+    using var con = new SqliteConnection(cs);
+    con.Open();
+    
+    using var cmd = new SqliteCommand();
+    cmd.Connection = con;
+    cmd.CommandText = $"DROP TABLE IF EXISTS {db_table}";
+    cmd.ExecuteNonQuery();
+
+    cmd.CommandText = sql_create_table;
+    cmd.ExecuteNonQuery();
+
+    //#INSERT DATA
+
+    foreach (var dicparam in lparams) {
+
+      int countKey = dicparam.Keys.Count();
+
+
+      String sql_query = $"INSERT INTO {db_table} (";
+      sql_query = sql_query + columns + ") VALUES ( " + "val" + ");";
+    }
+
+
+  }
 }
