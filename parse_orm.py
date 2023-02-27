@@ -51,6 +51,8 @@ with open(filename, "r", encoding="utf-8-sig") as f:
         else:
             str_log = "-#-".join((str_log, str))
 
+if (len(str_log)): mainArray.append(str_log)
+
 logging.info (f"Длинна массива: {len(mainArray)}")
 logging.info(f"Время подготовки массива строк: {datetime.datetime.now() - start_time}")
 
