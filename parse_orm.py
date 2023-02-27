@@ -57,6 +57,13 @@ logging.info (f"Длинна массива: {len(mainArray)}")
 logging.info(f"Время подготовки массива строк: {datetime.datetime.now() - start_time}")
 
 #2. Получаем список параметров
+# Подготовим патерны
+patterns = (",(\w+)='([^']+)", ',(\w+)="([^"]+)', ',([A-Za-z0-9А-Яа-я:]+)=([^,]+)')
+re_patterns = list()
+for pattern in patterns:
+    regex_newevent = re.compile(pattern)
+    re_patterns.append(regex_newevent)
+    
 fileparams = re.findall(r'(\d{2})(\d{2})(\d{2})(\d{2})', filename)
 (year, month, day, hour) = fileparams[0]
 lparams = list()
@@ -67,11 +74,10 @@ for elem in mainArray:
     time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S.%f')
     Dict_params = {'time':date_time_str}
 
-    re_patterns = (",(\w+)='([^']+)", ',(\w+)="([^"]+)', ',([A-Za-z0-9А-Яа-я:]+)=([^,]+)')
     for pattern in re_patterns:
         params = re.findall(pattern, elem)
         append_to_dict(Dict_params, params)
-        if re_patterns.index(pattern) != len(pattern)-1:
+        if re_patterns.index(pattern) != len(re_patterns)-1:
             elem = re.sub(pattern, "", elem)
 
     if len(Dict_params):
