@@ -1,11 +1,19 @@
 import os
 import re
 import datetime
+import logging
 from sqlalchemy import create_engine, MetaData, inspect
 from sqlalchemy import Table, Column, String
 
+logging.basicConfig(
+    # filename='result_log.txt',
+    level=logging.INFO,
+    format='%(asctime)s:%(levelname)s:%(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
 start_time = datetime.datetime.now()
-print(f"Start: {start_time}")
+logging.info(f"Start: {start_time}")
 
 #VARS
 filename= os.environ.get('filename')
@@ -26,7 +34,7 @@ def append_to_dict(D_params, lparams):
     for params in lparams:
         D_params[params[0].lower()] = params[1].replace("'","").replace("''","").replace("-#-", '\n')
     
-print(f"Время чтения файла: {datetime.datetime.now() - start_time}")
+logging.info(f"Время чтения файла: {datetime.datetime.now() - start_time}")
 
 str_log = ""
 mainArray = list()
@@ -43,8 +51,10 @@ with open(filename, "r", encoding="utf-8-sig") as f:
         else:
             str_log = "-#-".join((str_log, str))
 
-print (f"Длинна массива: {len(mainArray)}")
-print(f"Время подготовки массива строк: {datetime.datetime.now() - start_time}")
+if (len(str_log)): mainArray.append(str_log)
+
+logging.info (f"Длинна массива: {len(mainArray)}")
+logging.info(f"Время подготовки массива строк: {datetime.datetime.now() - start_time}")
 
 #2. Получаем список параметров
 fileparams = re.findall(r'(\d{2})(\d{2})(\d{2})(\d{2})', filename)
@@ -67,8 +77,8 @@ for elem in mainArray:
     if len(Dict_params):
         lparams.append(Dict_params)
 
-print(f"Длинна списка параметров: {len(lparams)}")
-print(f"Разбор параметров: {datetime.datetime.now() - start_time}")
+logging.info(f"Длинна списка параметров: {len(lparams)}")
+logging.info(f"Разбор параметров: {datetime.datetime.now() - start_time}")
 
 #exit(0)
 #SQL CONNECT
@@ -80,7 +90,7 @@ match sql_type:
     case "sqlight":
         connect_string = f"sqlite:///{db_file}"
     case _:
-        print('Не определен тип базы данных')
+        logging.error('Не определен тип базы данных')
         exit(0)
 
 engine = create_engine(connect_string, echo=False, future=False)
@@ -93,7 +103,7 @@ tables_in_base = inspect.get_table_names()
 if db_table in tables_in_base:
     dbTable = Table(db_table, metadata, autoload_with=engine)
 else:
-    print("The table doesn't exist")
+    logging.error("The table doesn't exist")
     #GET LIST UNIQUE COLUMS
     lcolumns = list()
     for params in lparams:
@@ -109,7 +119,7 @@ else:
     dbTable = Table(db_table, metadata, *l_Column)
     metadata.create_all()
 
-print(f"Определение таблицы БД: {datetime.datetime.now() - start_time}")
+logging.info(f"Определение таблицы БД: {datetime.datetime.now() - start_time}")
 
 #INSERT DATA
 inserted = 0
@@ -119,9 +129,9 @@ for params in lparams:
     result = conn.execute(ins)
 
     inserted += 1
-    print(f"Вставили запись: {inserted}")
+    logging.debug(f"Вставили запись: {inserted}")
 
-print(f"Количество записей в базе: {inserted}")
+logging.info(f"Количество записей в базе: {inserted}")
 
 end_time = datetime.datetime.now()
-print(f"Время выполнения: {end_time - start_time}")
+logging.info(f"Время выполнения: {end_time - start_time}")
