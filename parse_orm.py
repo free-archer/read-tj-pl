@@ -68,11 +68,11 @@ fileparams = re.findall(r'(\d{2})(\d{2})(\d{2})(\d{2})', filename)
 (year, month, day, hour) = fileparams[0]
 lparams = list()
 for elem in mainArray:
-    timeparams = re.findall(r'(\d{2}):(\d{2}).(\d{6})', elem)
-    (minute, second, msec) = timeparams[0]
+    timeparams = re.findall(r'(\d{2}):(\d{2}).(\d{6})-(\d+)', elem)
+    (minute, second, msec, duration) = timeparams[0]
     date_time_str = f'20{year}-{month}-{day} {hour}:{minute}:{second}.{msec}'
     time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S.%f')
-    Dict_params = {'time':date_time_str}
+    Dict_params = {'time':date_time_str, 'duration':duration}
 
     for pattern in re_patterns:
         params = re.findall(pattern, elem)
